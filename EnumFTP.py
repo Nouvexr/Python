@@ -13,7 +13,7 @@ s.send("PASS anonymous\r\n")
 r = s.recv(1024)
 print r
 
-s.send("PWD \r\n")
-s.send("QUIT \r\n")
+s.send("PWD\r\n")
+s.send("QUIT\r\n")
 r = s.recv(2048)
 print r
